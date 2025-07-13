@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Interactive Photorealistic Earth</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <style>
+        html,body{margin:0;height:100%;background:#000;color:#eee;font-family:Arial,Helvetica,sans-serif;overflow:hidden}
+        #info{position:absolute;top:12px;left:12px;font-size:13px;pointer-events:none;text-shadow:0 0 4px #000}
+    </style>
+</head>
+<body>
+    <div id="info">
+        <strong>Interactive Earth</strong><br>
+        Drag to rotate • Scroll to zoom • Right-drag to pan
+    </div>
+
+    <!-- Three.js -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.156.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.156.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+/* ------------------------------------------------------------------
+   CONFIGURATION
+------------------------------------------------------------------ */
+const ASSETS = {
+    earthMap : 'https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg',
+    bumpMap  : 'https://threejs.org/examples/textures/planets/earth_normal_2048.jpg',
+    specMap  : 'https://threejs.org/examples/textures/planets/earth_specular_2048.jpg',
+    nightMap : 'https://threejs.org/examples/textures/planets/earth_lights_2048.jpg',
+    clouds   : 'https://threejs.org/examples/textures/planets/earth_clouds_1024.png',
+    stars    : 'https://threejs.org/examples/textures/2k_stars.jpg'
+};
+
+/* ------------------------------------------------------------------
+   BOOTSTRAP
+------------------------------------------------------------------ */
+const scene    = new THREE.Scene();
+const camera   = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(devicePixelRatio);
+renderer.shadowMap.enabled = true;
+document.body.appendChild(renderer.domElement);
+
+/* ------------------------------------------------------------------
+   LIGHTING
+------------------------------------------------------------------ */
+const sun = new THREE.DirectionalLight(0xffffff, 1.8);
+sun.position.set(5, 3, 5);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.near = 0.5;
+sun.shadow.camera.far  = 50;
+sun.shadow.camera.left = sun.shadow.camera.bottom = -10;
+sun.shadow.camera.right = sun.shadow.camera.top   = 10;
+scene.add(sun);
+
+scene.add(new THREE.AmbientLight(0x222244, 1));
+
+/* ------------------------------------------------------------------
+   STARFIELD
+------------------------------------------------------------------ */
+const starSphere = new THREE.Mesh(
+    new THREE.SphereGeometry(500, 64, 64),
+    new THREE.MeshBasicMaterial({
+        map: new THREE.TextureLoader().load(ASSETS.stars),
+        side: THREE.BackSide
+    })
+);
+scene.add(starSphere);
+
+/* ------------------------------------------------------------------
+   EARTH
+------------------------------------------------------------------ */
+const earthGroup = new THREE.Group();
+scene.add(earthGroup);
+
+const earthMat = new THREE.MeshPhongMaterial();
+const texLoader = new THREE.TextureLoader();
+earthMat.map        = texLoader.load(ASSETS.earthMap);
+earthMat.bumpMap    = texLoader.load(ASSETS.bumpMap);
+earthMat.bumpScale  = 0.05;
+earthMat.specularMap= texLoader.load(ASSETS.specMap);
+earthMat.specular   = new THREE.Color(0x666666);
+
+const earthMesh = new THREE.Mesh(
+    new THREE.SphereGeometry(2, 64, 64),
+    earthMat
+);
+earthMesh.receiveShadow = true;
+earthMesh.castShadow    = true;
+earthGroup.add(earthMesh);
+
+/* Night lights (emissive) */
+const nightMat = new THREE.MeshBasicMaterial({
+    map: texLoader.load(ASSETS.nightMap),
+    blending: THREE.AdditiveBlending,
+    opacity: 1
+});
+const nightMesh = new THREE.Mesh(
+    new THREE.SphereGeometry(2.001, 64, 64),
+    nightMat
+);
+earthGroup.add(nightMesh);
+
+/* ------------------------------------------------------------------
+   CLOUDS
+------------------------------------------------------------------ */
+const cloudMat = new THREE.MeshPhongMaterial({
+    map: texLoader.load(ASSETS.clouds),
+    transparent: true,
+    opacity: 0.8,
+    depthWrite: false
+});
+const cloudMesh = new THREE.Mesh(
+    new THREE.SphereGeometry(2.02, 64, 64),
+    cloudMat
+);
+cloudMesh.castShadow = true;
+earthGroup.add(cloudMesh);
+
+/* ------------------------------------------------------------------
+   CAMERA & CONTROLS
+------------------------------------------------------------------ */
+camera.position.set(0, 0, 6);
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+controls.minDistance = 3;
+controls.maxDistance = 20;
+
+/* ------------------------------------------------------------------
+   ANIMATION LOOP
+------------------------------------------------------------------ */
+const clock = new THREE.Clock();
+function animate() {
+    requestAnimationFrame(animate);
+    const t = clock.getElapsedTime();
+
+    /* Earth rotation */
+    earthMesh.rotation.y  = t * 0.05;
+    nightMesh.rotation.y  = t * 0.05;
+
+    /* Faster independent cloud rotation */
+    cloudMesh.rotation.y  = t * 0.07;
+
+    controls.update();
+    renderer.render(scene, camera);
+}
+animate();
+
+/* ------------------------------------------------------------------
+   RESIZE
+------------------------------------------------------------------ */
+addEventListener('resize', () => {
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+});
+    </script>
+</body>
+</html>
