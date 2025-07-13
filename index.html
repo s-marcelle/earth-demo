@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <title>Interactive Photorealistic Earth</title>
+  <title>Interactive Earth – ES-module</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <style>
     html,body{margin:0;height:100%;background:#000;color:#eee;font-family:Arial,Helvetica,sans-serif;overflow:hidden}
@@ -12,7 +12,7 @@
 <body>
   <div id="info"><strong>Interactive Earth</strong><br>Drag to rotate • Scroll to zoom • Right-drag to pan</div>
 
-  <!-- Three.js ES-modules -->
+  <!-- ES-module Three.js & OrbitControls -->
   <script type="module">
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.156.0/build/three.module.js';
     import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.156.0/examples/jsm/controls/OrbitControls.js';
@@ -45,18 +45,13 @@
     const loader = new THREE.TextureLoader();
     const starSphere = new THREE.Mesh(
       new THREE.SphereGeometry(500, 64, 64),
-      new THREE.MeshBasicMaterial({
-        map: loader.load(ASSETS.stars),
-        side: THREE.BackSide
-      })
+      new THREE.MeshBasicMaterial({ map: loader.load(ASSETS.stars), side: THREE.BackSide })
     );
     scene.add(starSphere);
 
-    /* ---------- EARTH GROUP ---------- */
-    const earthGroup = new THREE.Group();
-    scene.add(earthGroup);
+    /* ---------- EARTH ---------- */
+    const earthGroup = new THREE.Group(); scene.add(earthGroup);
 
-    /* Earth mesh */
     const earthMat = new THREE.MeshPhongMaterial({
       map:       loader.load(ASSETS.earthMap),
       bumpMap:   loader.load(ASSETS.bumpMap),
@@ -67,16 +62,14 @@
     const earthMesh = new THREE.Mesh(new THREE.SphereGeometry(2, 64, 64), earthMat);
     earthGroup.add(earthMesh);
 
-    /* Night lights */
     const nightMat = new THREE.MeshBasicMaterial({
       map: loader.load(ASSETS.nightMap),
-      blending: THREE.AdditiveBlending,
-      opacity: 1
+      blending: THREE.AdditiveBlending
     });
     const nightMesh = new THREE.Mesh(new THREE.SphereGeometry(2.001, 64, 64), nightMat);
     earthGroup.add(nightMesh);
 
-    /* Clouds */
+    /* ---------- CLOUDS ---------- */
     const cloudMat = new THREE.MeshPhongMaterial({
       map: loader.load(ASSETS.clouds),
       transparent: true,
@@ -90,7 +83,6 @@
     camera.position.set(0, 0, 6);
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
     controls.minDistance = 3;
     controls.maxDistance = 20;
 
@@ -99,8 +91,8 @@
     function animate() {
       requestAnimationFrame(animate);
       const t = clock.getElapsedTime();
-      earthMesh.rotation.y  = nightMesh.rotation.y = t * 0.05;
-      cloudMesh.rotation.y  = t * 0.07;
+      earthMesh.rotation.y = nightMesh.rotation.y = t * 0.05;
+      cloudMesh.rotation.y = t * 0.07;
       controls.update();
       renderer.render(scene, camera);
     }
