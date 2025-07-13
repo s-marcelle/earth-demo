@@ -2,19 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <title>Interactive Photorealistic Earth</title>
+  <title>Interactive Earth + Night Lights</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <style>
     html,body{margin:0;height:100%;background:#000;color:#eee;font-family:Arial,Helvetica,sans-serif;overflow:hidden}
     #info{position:absolute;top:12px;left:12px;font-size:13px;pointer-events:none;text-shadow:0 0 4px #000}
   </style>
 
-  <!-- 1️⃣  Import map tells the browser where “three” and “three/addons” are -->
+  <!-- Import map for Skypack -->
   <script type="importmap">
   {
     "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.156.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.156.0/examples/jsm/"
+      "three": "https://cdn.skypack.dev/three@0.156.0",
+      "three/addons/": "https://cdn.skypack.dev/three@0.156.0/examples/jsm/"
     }
   }
   </script>
@@ -22,7 +22,6 @@
 <body>
   <div id="info"><strong>Interactive Earth</strong><br>Drag to rotate • Scroll to zoom • Right-drag to pan</div>
 
-  <!-- 2️⃣  ES module script -->
   <script type="module">
     import * as THREE from "https://cdn.skypack.dev/three";
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -59,9 +58,11 @@
     );
     scene.add(starSphere);
 
-    /* ---------- EARTH ---------- */
-    const earthGroup = new THREE.Group(); scene.add(earthGroup);
+    /* ---------- EARTH GROUP ---------- */
+    const earthGroup = new THREE.Group();
+    scene.add(earthGroup);
 
+    /* Day-side earth */
     const earthMat = new THREE.MeshPhongMaterial({
       map:       loader.load(ASSETS.earthMap),
       bumpMap:   loader.load(ASSETS.bumpMap),
@@ -72,9 +73,11 @@
     const earthMesh = new THREE.Mesh(new THREE.SphereGeometry(2, 64, 64), earthMat);
     earthGroup.add(earthMesh);
 
+    /* Night-side lights (emissive) */
     const nightMat = new THREE.MeshBasicMaterial({
       map: loader.load(ASSETS.nightMap),
-      blending: THREE.AdditiveBlending
+      blending: THREE.AdditiveBlending,
+      opacity: 1
     });
     const nightMesh = new THREE.Mesh(new THREE.SphereGeometry(2.001, 64, 64), nightMat);
     earthGroup.add(nightMesh);
