@@ -2,29 +2,29 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <title>Interactive Earth + Night Lights</title>
+  <title>Error-Free Interactive Earth</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <style>
     html,body{margin:0;height:100%;background:#000;color:#eee;font-family:Arial,Helvetica,sans-serif;overflow:hidden}
     #info{position:absolute;top:12px;left:12px;font-size:13px;pointer-events:none;text-shadow:0 0 4px #000}
   </style>
-
-  <!-- Import map for Skypack -->
-  <script type="importmap">
-{
-  "imports": {
-    "three": "https://esm.sh/three@0.156.0",
-    "three/addons/": "https://esm.sh/three@0.156.0/examples/jsm/"
-  }
-}
-</script>
 </head>
 <body>
   <div id="info"><strong>Interactive Earth</strong><br>Drag to rotate • Scroll to zoom • Right-drag to pan</div>
 
+  <!-- 100 % stable CDN links, no bare specifiers -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three":      "https://cdn.jsdelivr.net/npm/three@0.156.0/build/three.module.js",
+      "controls":   "https://cdn.jsdelivr.net/npm/three@0.156.0/examples/jsm/controls/OrbitControls.js"
+    }
+  }
+  </script>
+
   <script type="module">
-    import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
-    import * as THREE from "https://cdn.skypack.dev/three";
+    import * as THREE from 'three';
+    import { OrbitControls } from 'controls';
 
     /* ---------- CONFIG ---------- */
     const ASSETS = {
@@ -38,7 +38,7 @@
 
     /* ---------- BASIC SETUP ---------- */
     const scene    = new THREE.Scene();
-    const camera   = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 1000);
+    const camera   = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(innerWidth, innerHeight);
     renderer.setPixelRatio(devicePixelRatio);
@@ -73,7 +73,7 @@
     const earthMesh = new THREE.Mesh(new THREE.SphereGeometry(2, 64, 64), earthMat);
     earthGroup.add(earthMesh);
 
-    /* Night-side lights (emissive) */
+    /* Night-side city lights */
     const nightMat = new THREE.MeshBasicMaterial({
       map: loader.load(ASSETS.nightMap),
       blending: THREE.AdditiveBlending,
