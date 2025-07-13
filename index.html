@@ -2,17 +2,24 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <title>Error-Free Interactive Earth</title>
+  <title>Interactive Earth – Enhanced</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <style>
     html,body{margin:0;height:100%;background:#000;color:#eee;font-family:Arial,Helvetica,sans-serif;overflow:hidden}
     #info{position:absolute;top:12px;left:12px;font-size:13px;pointer-events:none;text-shadow:0 0 4px #000}
+    #panel{position:absolute;top:12px;right:12px;padding:8px 12px;background:#111a;border-radius:6px;font-size:12px;z-index:10}
+    button{margin:2px 0;padding:4px 6px;font-size:12px}
   </style>
 </head>
 <body>
   <div id="info"><strong>Interactive Earth</strong><br>Drag to rotate • Scroll to zoom • Right-drag to pan</div>
+  <div id="panel">
+    <div id="coords">Lat: — / Lon: —</div>
+    <button id="btnLights">Toggle Lights</button>
+    <button id="btnClouds">Toggle Clouds</button>
+  </div>
 
-  <!-- 100 % stable CDN links, no bare specifiers -->
+  <!-- 100 % stable CDN -->
   <script type="importmap">
   {
     "imports": {
@@ -59,10 +66,9 @@
     scene.add(starSphere);
 
     /* ---------- EARTH GROUP ---------- */
-    const earthGroup = new THREE.Group();
-    scene.add(earthGroup);
+    const earthGroup = new THREE.Group(); scene.add(earthGroup);
 
-    /* Day-side earth */
+    /* Day earth */
     const earthMat = new THREE.MeshPhongMaterial({
       map:       loader.load(ASSETS.earthMap),
       bumpMap:   loader.load(ASSETS.bumpMap),
@@ -71,9 +77,10 @@
       specular: new THREE.Color(0x666666)
     });
     const earthMesh = new THREE.Mesh(new THREE.SphereGeometry(2, 64, 64), earthMat);
+    earthMesh.name = 'earth';
     earthGroup.add(earthMesh);
 
-    /* Night-side city lights */
+    /* Night lights */
     const nightMat = new THREE.MeshBasicMaterial({
       map: loader.load(ASSETS.nightMap),
       blending: THREE.AdditiveBlending,
@@ -82,7 +89,7 @@
     const nightMesh = new THREE.Mesh(new THREE.SphereGeometry(2.001, 64, 64), nightMat);
     earthGroup.add(nightMesh);
 
-    /* ---------- CLOUDS ---------- */
+    /* Clouds */
     const cloudMat = new THREE.MeshPhongMaterial({
       map: loader.load(ASSETS.clouds),
       transparent: true,
@@ -90,6 +97,7 @@
       depthWrite: false
     });
     const cloudMesh = new THREE.Mesh(new THREE.SphereGeometry(2.02, 64, 64), cloudMat);
+    cloudMesh.name = 'clouds';
     earthGroup.add(cloudMesh);
 
     /* ---------- CAMERA & CONTROLS ---------- */
@@ -99,6 +107,55 @@
     controls.minDistance = 3;
     controls.maxDistance = 20;
 
+    /* ---------- INTERACTION ---------- */
+    const raycaster = new THREE.Raycaster();
+    const pointer   = new THREE.Vector2();
+    const coordsEl  = document.getElementById('coords');
+
+    function latLonFromPoint(point) {
+      const phi   = Math.acos(point.y / 2);          // polar angle
+      const theta = Math.atan2(point.z, point.x);    // azimuth
+      const lat   = 90 - phi * 180 / Math.PI;
+      const lon   = (theta * 180 / Math.PI + 180) % 360 - 180;
+      return { lat: lat.toFixed(2), lon: lon.toFixed(2) };
+    }
+
+    function onPointerMove(event) {
+      pointer.x = (event.clientX / innerWidth)  * 2 - 1;
+      pointer.y = -(event.clientY / innerHeight) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      const intersects = raycaster.intersectObject(earthMesh);
+      if (intersects.length) {
+        const { lat, lon } = latLonFromPoint(intersects[0].point);
+        coordsEl.textContent = `Lat: ${lat}° / Lon: ${lon}°`;
+      }
+    }
+
+    function onDoubleClick(event) {
+      pointer.x = (event.clientX / innerWidth)  * 2 - 1;
+      pointer.y = -(event.clientY / innerHeight) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      const intersects = raycaster.intersectObject(earthMesh);
+      if (!intersects.length) return;
+
+      const targetPoint = intersects[0].point.clone().normalize().multiplyScalar(5);
+      controls.target.copy(intersects[0].point);
+      camera.position.lerp(targetPoint, 0.05);
+      controls.update();
+    }
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('dblclick', onDoubleClick);
+
+    /* ---------- UI BUTTONS ---------- */
+    document.getElementById('btnLights').addEventListener('click', () => {
+      nightMesh.visible = !nightMesh.visible;
+    });
+
+    document.getElementById('btnClouds').addEventListener('click', () => {
+      cloudMesh.visible = !cloudMesh.visible;
+    });
+
     /* ---------- ANIMATION LOOP ---------- */
     const clock = new THREE.Clock();
     function animate() {
@@ -106,6 +163,8 @@
       const t = clock.getElapsedTime();
       earthMesh.rotation.y = nightMesh.rotation.y = t * 0.05;
       cloudMesh.rotation.y = t * 0.07;
+      /* subtle cloud pulse (fake weather) */
+      cloudMat.opacity = 0.7 + 0.15 * Math.sin(t * 0.8);
       controls.update();
       renderer.render(scene, camera);
     }
